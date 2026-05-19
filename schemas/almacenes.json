@@ -1,0 +1,24 @@
+{
+    "table_name": "almacenes",
+    "table_type": "dimension",
+    "primary_key": "almacen_id",
+    "description": "Catalogo de almacenes",
+    "columns": [
+        {
+            "raw_name": "almacen_id",
+            "clean_name": "almacen_id",
+            "pandas_type": "str",
+            "postgres_type": "VARCHAR(50)",
+            "is_date": false,
+            "required": true
+        },
+        {
+            "raw_name": "nombre",
+            "clean_name": "nombre",
+            "pandas_type": "str",
+            "postgres_type": "VARCHAR(150)",
+            "is_date": false,
+            "required": true
+        }
+    ]
+}

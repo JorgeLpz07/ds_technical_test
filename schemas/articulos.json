@@ -1,0 +1,32 @@
+{
+    "table_name": "articulos",
+    "table_type": "dimension",
+    "primary_key": "articulo_id",
+    "description": "Catalogo de articulos",
+    "columns": [
+        {
+            "raw_name": "articulo_id",
+            "clean_name": "articulo_id",
+            "pandas_type": "str",
+            "postgres_type": "VARCHAR(50)",
+            "is_date": false,
+            "required": true
+        },
+        {
+            "raw_name": "sku",
+            "clean_name": "sku",
+            "pandas_type": "str",
+            "postgres_type": "VARCHAR(100)",
+            "is_date": false,
+            "required": true
+        },
+        {
+            "raw_name": "nombre",
+            "clean_name": "nombre",
+            "pandas_type": "str",
+            "postgres_type": "VARCHAR(250)",
+            "is_date": false,
+            "required": true
+        }
+    ]
+}
