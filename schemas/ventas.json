@@ -15,16 +15,16 @@
         {
             "raw_name": "almacen_id",
             "clean_name": "almacen_id",
-            "pandas_type": "str",
-            "postgres_type": "VARCHAR(50)",
+            "pandas_type": "int64",
+            "postgres_type": "BIGINT",
             "is_date": false,
             "required": true
         },
         {
             "raw_name": "articulo_id",
             "clean_name": "articulo_id",
-            "pandas_type": "str",
-            "postgres_type": "VARCHAR(50)",
+            "pandas_type": "int64",
+            "postgres_type": "BIGINT",
             "is_date": false,
             "required": true
         },

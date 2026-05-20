@@ -28,10 +28,13 @@ Durante el desarrollo de esta solución se tomaron decisiones clave para asegura
 *   **Enfoque**: Las tablas de staging son truncadas **una vez al inicio de todo el pipeline**.
 *   **Resultado**: Los bloques individuales correspondientes a la misma tabla se insertan secuencialmente (append) acumulándose en staging de forma limpia y garantizando que no se dupliquen registros de ejecuciones previas incompletas.
 
-### 5. Reprocesamiento Seguro
-*   **Enfoque**: Para garantizar que el proceso pueda ejecutarse múltiples veces (al corregir un archivo) sin generar datos duplicados, se implementaron dos estrategias en la capa Silver:
+### 5. Reprocesamiento Seguro (Idempotencia)
+*   **Enfoque**: Para garantizar que el proceso pueda ejecutarse múltiples veces sin generar datos duplicados, se implementaron dos estrategias en la capa Silver:
 *   Los catálogos (`almacenes`, `articulos`) se actualizan mediante **UPSERT** (`ON CONFLICT DO UPDATE`).
-*   Las tablas de hechos (`movimientos`, `ventas`) utilizan el patrón **DELETE-INSERT**, borrando dinámicamente los días a reprocesar antes de insertar la nueva carga. Esto asegura que la información de ese día siempre sea la correcta.
+*   Las tablas de hechos (`movimientos`, `ventas`) utilizan el patrón **DELETE-INSERT**, borrando dinámicamente los días a reprocesar antes de insertar la nueva carga. 
+
+> [!TIP]
+> **Hallazgo de Calidad de Datos (Manejo de Duplicados y Negativos):** Durante el desarrollo, se comprobó que el archivo `movimientos.csv` contenía registros duplicados idénticos. Al ser eliminados por la Capa Silver (para garantizar la unicidad e integridad), el volumen real de entradas disminuyó, ocasionando que las ventas superaran a las recepciones y generando inventarios matemáticamente negativos. Para efectos prácticos y de demostración visual del ejercicio, se optó por modificar manualmente las fechas de estas entradas duplicadas en el archivo CSV (distribuyéndolas en meses posteriores) para simular un reabastecimiento continuo y mantener los saldos de inventario en números positivos.
 
 ### 6. Particionamiento de Datos
 *   **Enfoque**: Al ser este un ejercicio de prueba, se optó por usar tablas estándar para agilizar el desarrollo y las pruebas locales.
@@ -41,6 +44,39 @@ Durante el desarrollo de esta solución se tomaron decisiones clave para asegura
 *   **Enfoque**: Las credenciales de conexión fueron desacopladas del código fuente para evitar *hardcoding*. Se requiere un archivo local `.env` en la raíz del proyecto para que el pipeline lea la configuración dinámicamente mediante `python-dotenv`.
 
 > Para efectos practivos se deja el archivo .env en el proyecto para que pueda ser usado directamente sin necesidad de crearlo.
+
+---
+
+## Supuestos Realizados
+
+Durante el análisis de los datos fuente y el desarrollo del pipeline, se identificaron y asumieron los siguientes puntos:
+
+### Sobre el Modelo de Datos
+
+1. **Costo Único por Artículo:** Se asume que cada artículo tiene un único costo de adquisición vigente. El catálogo `gold_dim_articulo_costo` toma el costo del movimiento de entrada más reciente por artículo como el costo representativo para valuar el inventario y las ventas.
+
+2. **Precio Único por Artículo:** De forma análoga al costo, se asume un único precio de lista por artículo. El catálogo `gold_dim_articulo_precio` toma el precio más reciente registrado en las ventas.
+
+3. **Precio en Ventas como Precio Real Cobrado:** El campo `precio_total` de la tabla de ventas se interpreta como el monto **efectivamente cobrado** al cliente (ya incluyendo cualquier descuento aplicado en el punto de venta). La diferencia entre `(precio_lista * unidades)` y `precio_total` se calcula como el **descuento otorgado**.
+
+4. **Identificadores como Claves Enteras:** Los campos `almacen_id` y `articulo_id` se identificaron como identificadores numéricos (a pesar de estar almacenados como cadenas en los CSV originales), por lo que se tipificaron como `BIGINT` en la base de datos para optimizar los JOINs.
+
+5. **Tabla de Ventas Independiente del Inventario:** Se asume que el sistema fuente registra ventas y movimientos de almacén de forma independiente. Por ello, se utiliza un `FULL OUTER JOIN` en la capa de indicadores para garantizar que días con movimientos pero sin ventas, o viceversa, no se pierdan del reporte.
+
+### Sobre la Calidad de los Datos
+
+6. **Duplicados en CSV de Movimientos:** Se detectaron registros duplicados exactos en el archivo `movimientos.csv`, particularmente en entradas del `2026-01-01`. La Capa Silver aplica deduplicación automática, pero esto reducía el saldo de inventario causando valores negativos. Como solución práctica para el ejercicio, se redistribuyeron manualmente las fechas de las entradas duplicadas a meses posteriores para mantener saldos positivos y demostrar el flujo completo del pipeline.
+
+7. **Inventario Inicial en Cero:** Se asume que al inicio del periodo analizado (`2026-01-01`) el inventario es **cero para todos los artículos**. El inventario se construye acumulando entradas y salidas desde el primer movimiento registrado mediante funciones de ventana.
+
+8. **Sell-through Basado en Disponibilidad Diaria:** El KPI de Sell-through se calcula como `Ventas / (Inventario Inicio + Entradas del Día)`. Si el inventario disponible de un día es cero, el indicador se reporta como `0` para evitar divisiones por cero.
+
+### Sobre la Arquitectura
+
+9. **Entorno de Prueba sin Particionamiento:** Para simplificar el desarrollo local, se utilizaron tablas estándar en la Capa Silver (sin particionamiento por fecha). En un entorno de producción con volúmenes reales, se recomienda implementar particionamiento por fecha.
+
+10. **Recreación Completa de Tablas Gold:** Las funciones de la Capa Gold aplican un patrón `DROP IF EXISTS + CREATE TABLE AS`, lo cual garantiza la idempotencia total en un entorno de prueba. En producción se debería implementar una estrategia de carga incremental.
+
 ---
 
 ## Estructura del Proyecto

@@ -9,7 +9,7 @@
 -- Almacenes
 INSERT INTO almacenes (almacen_id, nombre)
 SELECT DISTINCT 
-    TRIM(almacen_id) AS almacen_id, 
+    almacen_id, 
     TRIM(nombre) AS nombre 
 FROM stg_almacenes
 WHERE almacen_id IS NOT NULL
@@ -19,7 +19,7 @@ SET nombre = EXCLUDED.nombre;
 -- Artículos
 INSERT INTO articulos (articulo_id, sku, nombre)
 SELECT DISTINCT 
-    TRIM(articulo_id) AS articulo_id, 
+    articulo_id, 
     TRIM(sku) AS sku, 
     TRIM(nombre) AS nombre 
 FROM stg_articulos
@@ -43,15 +43,15 @@ WHERE fecha IN (SELECT DISTINCT fecha FROM stg_movimientos WHERE fecha IS NOT NU
 INSERT INTO movimientos (fecha, almacen_id, tipo_movto, articulo_id, unidades, costo_unitario, costo_total)
 SELECT DISTINCT 
     m.fecha, 
-    TRIM(m.almacen_id), 
-    TRIM(m.tipo_movto), 
-    TRIM(m.articulo_id), 
+    m.almacen_id, 
+    m.tipo_movto, 
+    m.articulo_id, 
     m.unidades, 
     m.costo_unitario, 
     m.costo_total
 FROM stg_movimientos m
-INNER JOIN almacenes al ON TRIM(m.almacen_id) = al.almacen_id
-INNER JOIN articulos ar ON TRIM(m.articulo_id) = ar.articulo_id
+INNER JOIN almacenes al ON m.almacen_id = al.almacen_id
+INNER JOIN articulos ar ON m.articulo_id = ar.articulo_id
 WHERE m.fecha IS NOT NULL;
 
 
@@ -64,12 +64,12 @@ WHERE fecha IN (SELECT DISTINCT fecha FROM stg_ventas WHERE fecha IS NOT NULL);
 INSERT INTO ventas (fecha, almacen_id, articulo_id, unidades, precio_unitario, precio_total)
 SELECT DISTINCT 
     v.fecha, 
-    TRIM(v.almacen_id), 
-    TRIM(v.articulo_id), 
+    v.almacen_id, 
+    v.articulo_id, 
     v.unidades, 
     v.precio_unitario, 
     v.precio_total
 FROM stg_ventas v
-INNER JOIN almacenes al ON TRIM(v.almacen_id) = al.almacen_id
-INNER JOIN articulos ar ON TRIM(v.articulo_id) = ar.articulo_id
+INNER JOIN almacenes al ON v.almacen_id = al.almacen_id
+INNER JOIN articulos ar ON v.articulo_id = ar.articulo_id
 WHERE v.fecha IS NOT NULL;

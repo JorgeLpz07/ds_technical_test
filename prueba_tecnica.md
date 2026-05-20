@@ -114,7 +114,7 @@ Diseña un dashboard ejecutivo que permita visualizar el desempeño comercial de
 ## Bonus (Opcional)
 
 * Docker
-* Dbt
+* DBT
 * Airflow
 * Pruebas automáticas
 * Logging
