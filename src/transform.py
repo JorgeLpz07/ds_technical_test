@@ -5,7 +5,6 @@ from src.utils import obtener_logger
 
 logger = obtener_logger(__name__)
 
-
 def estandarizar_columnas(df: pd.DataFrame, table_name: str) -> pd.DataFrame:
     """
     Renombra las columnas del DataFrame mapeando raw_name a clean_name

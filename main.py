@@ -8,6 +8,8 @@ from src.load import (
     limpiar_staging, 
     cargar_chunk_db
 )
+from pathlib import Path
+from src.load import obtener_conexion_db
 
 # Inicializamos y obtenemos el logger para el script principal
 configurar_logging()
@@ -43,8 +45,28 @@ def ejecutar_etl():
                 
                 # Cargar a base de datos en tabla staging
                 cargar_chunk_db(chunk_limpio, table_name)
-                
+
         logger.info("==================================================")
+        logger.info("Iniciando migración a Capa Silver (Deduplicación y Limpieza)...")
+        
+        # Leemos el archivo SQL
+        sql_path = Path(__file__).resolve().parent / "sql" / "silver_transform.sql"
+        with open(sql_path, "r", encoding="utf-8") as f:
+            sql_script = f.read()
+
+        # Lo ejecutamos en la base de datos
+        conn = obtener_conexion_db()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(sql_script)
+            conn.commit()
+            logger.info("Capa Silver completada con éxito.")
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error al migrar a capa Silver: {e}")
+        finally:
+            conn.close()
+
         
         logger.info("==================================================")
         logger.info("PIPELINE ETL FINALIZADO CON EXITO")

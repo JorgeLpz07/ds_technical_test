@@ -4,6 +4,7 @@ from pathlib import Path
 import pandas as pd
 import json
 from src.utils import obtener_logger
+from src.config import Config
 
 logger = obtener_logger(__name__)
 
@@ -29,13 +30,9 @@ def obtener_configuracion_tablas() -> dict:
 TABLAS_CONFIG = obtener_configuracion_tablas()
 
 def obtener_conexion_db():
-    return psycopg2.connect(
-        host="localhost",
-        user="apps",
-        password="apps",
-        port="5432",
-        database="test"
-    )
+    params = Config.get_db_connection_params()
+    
+    return psycopg2.connect(**params)
 
 def inicializar_db():
     sql_path = Path(__file__).resolve().parent.parent / "sql" / "create_tables.sql"
