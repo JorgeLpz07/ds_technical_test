@@ -94,9 +94,8 @@ Durante el análisis de los datos fuente y el desarrollo del pipeline, se identi
 │   ├── transform.py       # Módulo para estandarización y calidad de datos
 │   └── utils.py           # Funciones de logging y utilidades
 ├── tests/                 # Pruebas unitarias
-├── Dockerfile             # Dockerización de la aplicación
 ├── docker-compose.yml     # Orquestación de infraestructura de servicios
-├── main.py                # Ejecutor principal del Pipeline
+├── main.py                # Ejecutor alternativo manual en Python
 └── README.md              # Documentación del proyecto
 ```
 
@@ -104,25 +103,45 @@ Durante el análisis de los datos fuente y el desarrollo del pipeline, se identi
 
 ## Requisitos Previos
 
-*   Python 3.8 o superior
-*   Base de Datos PostgreSQL activa (o desplegada mediante Docker)
+*   **Docker y Docker Compose** instalados (Recomendado para evaluación completa).
+*   *(Opcional)* Python 3.8+ si se desea ejecutar el pipeline localmente sin Docker.
 
 ---
 
-## Configuración y Ejecución
+## Configuración y Ejecución (Vía Docker + Airflow)
 
-1. **Instalar Dependencias**:
+El proyecto está dockerizado para facilitar su evaluación. Toda la infraestructura (Bases de datos + Orquestador) se levanta con un solo comando.
+
+1. **Levantar la Infraestructura**:
+   Abre una terminal en la raíz del proyecto y ejecuta:
    ```bash
-   pip install -r requirements.txt
+   docker compose up -d
    ```
+   *Esto descargará las imágenes e iniciará PostgreSQL (16), la base interna de Airflow (15) y los servicios del orquestador.*
 
-2. **Variables de Entorno**:
-   Crea un archivo `.env` en la raíz del proyecto con las credenciales de tu base de datos (puedes guiarte por las variables requeridas en `src/config.py`).
+2. **Acceder a Apache Airflow**:
+   Espera ~30 segundos para que los servicios inicialicen. Luego abre tu navegador en:
+   *   **URL:** `http://localhost:8085`
+   *   **Usuario:** `admin`
+   *   **Contraseña:** `admin`
 
 3. **Ejecutar el Pipeline**:
-   ```bash
-   python main.py
-   ```
 
-4. **Monitoreo (Logs)**:
-   La ejecución escribe logs detallados en consola y de forma persistente rotando diariamente en la carpeta `logs/etl.log`.
+4. **Consultar los Datos Finales**:
+   Con tu cliente SQL preferido (DBeaver, pgAdmin), conéctate a la base de datos local expuesta:
+   *   **Host:** `localhost`
+   *   **Puerto:** `5454`
+   *   **Usuario:** `etl_user`
+   *   **Contraseña:** `etl_password`
+   *   **Base de datos:** `etl_db`
+   
+   La tabla lista para ser conectada al Dashboard es **`gold_indicadores_negocio`**.
+
+---
+
+### Ejecución Manual (Alternativa sin Docker)
+Si cuentas con una base de datos PostgreSQL local corriendo en el puerto `5432`, puedes configurar tus credenciales en el archivo `.env` y ejecutar el orquestador manual de Python:
+```bash
+pip install -r requirements.txt
+python main.py
+```
