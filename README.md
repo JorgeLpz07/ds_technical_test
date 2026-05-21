@@ -43,7 +43,26 @@ Durante el desarrollo de esta solución se tomaron decisiones clave para asegura
 ### 7. Seguridad y Configuración
 *   **Enfoque**: Las credenciales de conexión fueron desacopladas del código fuente para evitar *hardcoding*. Se requiere un archivo local `.env` en la raíz del proyecto para que el pipeline lea la configuración dinámicamente mediante `python-dotenv`.
 
-> Para efectos practivos se deja el archivo .env en el proyecto para que pueda ser usado directamente sin necesidad de crearlo.
+> Para efectos practicos se deja el archivo .env en el proyecto para que pueda ser usado directamente sin necesidad de crearlo.
+
+### 8. Visualización y Modelado en Power BI
+La capa de visualización se construyó conectando Power BI directamente a la base de datos PostgreSQL, implementando un modelo técnico optimizado:
+
+![Dashboard](./output/powerbi.png)
+
+*   **Conectividad**: Conexión directa a PostgreSQL mediante el conector nativo para consumir los datos de la capa Gold.
+
+*   **Optimización del Modelo (Fact/Dimension)**:
+    *   Se realizó un proceso de combinación de tablas en Power Query (`articulos`, `gold_dim_articulo_costo` y `gold_dim_articulo_precio`) para consolidar la información en una sola tabla maestra.
+    * Se deshabilitó la carga de las tablas fuente originales (`articulos`, `costos`, `precios`) para evitar redundancia y optimizar el uso de memoria.
+
+*   **Arquitectura de Datos**: Se estructuró el modelo bajo un esquema tipo estrella, relacionando la tabla de hechos (`gold_indicadores_negocio`) con tablas dimensionales.
+
+*   **Calendario e Inteligencia de Tiempo**: Se integró una tabla de calendario mediante `CALENDARAUTO()` y se aplicó un filtrado dinámico en los objetos visuales para mostrar exclusivamente las semanas con actividad comercial (`movimientos > 0`), evitando el ruido de periodos sin transacciones.
+
+*   **Lógica de KPIs y Restricciones Técnicas**:
+    *   **Cálculo de Inventario**: Se configuró la medida para que el Inventario Final se calcule basándose estrictamente en el valor reportado en la última fecha seleccionada en los filtros, asegurando precisión en el saldo de stock al momento del análisis.
+    *   **Reemplazo de Ticket Promedio**: Ante la ausencia de un identificador de transacción único (`id_transaccion`) en la fuente agregada, se descartó el cálculo del ticket promedio para evitar sesgos. En su lugar, se implementó el KPI `"Venta Promedio Diaria"`, proporcionando una métrica consistente con la granularidad de los datos.
 
 ---
 
@@ -76,6 +95,11 @@ Durante el análisis de los datos fuente y el desarrollo del pipeline, se identi
 9. **Entorno de Prueba sin Particionamiento:** Para simplificar el desarrollo local, se utilizaron tablas estándar en la Capa Silver (sin particionamiento por fecha). En un entorno de producción con volúmenes reales, se recomienda implementar particionamiento por fecha.
 
 10. **Recreación Completa de Tablas Gold:** Las funciones de la Capa Gold aplican un patrón `DROP IF EXISTS + CREATE TABLE AS`, lo cual garantiza la idempotencia total en un entorno de prueba. En producción se debería implementar una estrategia de carga incremental.
+
+### Sobre el Modelado en Power BI
+11. **Tratamiento de fechas (Calendario):** Se estableció `CALENDARAUTO()` como la tabla central del modelo. Toda relación de tiempo entre hechos y dimensiones depende exclusivamente de esta tabla, evitando el uso de campos de fecha directos de la tabla de hechos para asegurar consistencia.
+
+12. **Periodos Semanales:** Debido a la naturaleza y volumen de la información proporcionada, se asume el uso de periodos semanales como estándar de análisis para las comparativas temporales y la visualización de tendencias, optimizando así la legibilidad de la información.
 
 ---
 
@@ -126,9 +150,10 @@ El proyecto está dockerizado para facilitar su evaluación. Toda la infraestruc
    *   **Contraseña:** `admin`
 
 3. **Ejecutar el Pipeline**:
+   En la interfaz web de Airflow, busca el DAG llamado **`dag_etl_pipeline`**.
+   *   Puedes hacer clic en el DAG y ver el "Graph" para observar cómo se ejecutan secuencialmente las capas Bronze, Silver y Gold.
 
 4. **Consultar los Datos Finales**:
-   Con tu cliente SQL preferido (DBeaver, pgAdmin), conéctate a la base de datos local expuesta:
    *   **Host:** `localhost`
    *   **Puerto:** `5454`
    *   **Usuario:** `etl_user`
