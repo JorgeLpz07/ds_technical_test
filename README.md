@@ -33,7 +33,6 @@ Durante el desarrollo de esta solución se tomaron decisiones clave para asegura
 *   Los catálogos (`almacenes`, `articulos`) se actualizan mediante **UPSERT** (`ON CONFLICT DO UPDATE`).
 *   Las tablas de hechos (`movimientos`, `ventas`) utilizan el patrón **DELETE-INSERT**, borrando dinámicamente los días a reprocesar antes de insertar la nueva carga. 
 
-> [!TIP]
 > **Hallazgo de Calidad de Datos (Manejo de Duplicados y Negativos):** Durante el desarrollo, se comprobó que el archivo `movimientos.csv` contenía registros duplicados idénticos. Al ser eliminados por la Capa Silver (para garantizar la unicidad e integridad), el volumen real de entradas disminuyó, ocasionando que las ventas superaran a las recepciones y generando inventarios matemáticamente negativos. Para efectos prácticos y de demostración visual del ejercicio, se optó por modificar manualmente las fechas de estas entradas duplicadas en el archivo CSV (distribuyéndolas en meses posteriores) para simular un reabastecimiento continuo y mantener los saldos de inventario en números positivos.
 
 ### 6. Particionamiento de Datos
@@ -49,6 +48,8 @@ Durante el desarrollo de esta solución se tomaron decisiones clave para asegura
 La capa de visualización se construyó conectando Power BI directamente a la base de datos PostgreSQL, implementando un modelo técnico optimizado:
 
 ![Dashboard](./output/powerbi.png)
+
+> Puedes acceder al archivo del informe en la ruta: `output/powerbi.pbix`
 
 *   **Conectividad**: Conexión directa a PostgreSQL mediante el conector nativo para consumir los datos de la capa Gold.
 
